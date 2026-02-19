@@ -47,3 +47,9 @@ prisma/dev.db-journal
 
 # netlify
 .netlify
+
+# WhatsApp bot session (contains auth tokens - never commit)
+/whatsapp-bot/session/
+/whatsapp-bot/node_modules/
+/whatsapp-bot/.wwebjs_auth/
+/whatsapp-bot/.wwebjs_cache/

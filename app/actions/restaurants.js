@@ -59,6 +59,145 @@ export async function addRestaurant(formData) {
     }
 }
 
+/**
+ * Extrae información de restaurante desde una URL pegada por el usuario.
+ * Soporta: Google Maps, goo.gl/maps, maps.app.goo.gl, Apple Maps,
+ *          TheFork, TripAdvisor y cualquier URL genérica.
+ */
+export async function extractFromUrl(urlStr) {
+    if (!urlStr) return null;
+
+    try {
+        const parsedUrl = new URL(urlStr.trim());
+        const host = parsedUrl.hostname.toLowerCase().replace('www.', '');
+
+        // ── Google Maps (including short URLs) ──────────────────────────────
+        if (host.includes('google.com/maps') || host === 'goo.gl' || host === 'maps.app.goo.gl' || host.includes('maps.google')) {
+            let fullUrl = urlStr;
+
+            // Expand short URLs via redirect
+            if (host === 'goo.gl' || host === 'maps.app.goo.gl') {
+                try {
+                    const r = await fetch(urlStr, { redirect: 'follow' });
+                    fullUrl = r.url;
+                } catch {
+                    // keep original
+                }
+            }
+
+            // Extract coordinates
+            const coordMatch = fullUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            const lat = coordMatch ? parseFloat(coordMatch[1]) : null;
+            const lng = coordMatch ? parseFloat(coordMatch[2]) : null;
+
+            // Extract place name from URL path
+            const placeMatch = fullUrl.match(/\/maps\/(?:place|search)\/([^/@?]+)/);
+            const qParam = new URL(fullUrl.split('?').length > 1 ? fullUrl : fullUrl + '?').searchParams.get('q');
+            const placeName = placeMatch
+                ? decodeURIComponent(placeMatch[1].replace(/\+/g, ' '))
+                : qParam || null;
+
+            if (placeName) {
+                const geo = await fetchLocationInfo(placeName);
+                return {
+                    name: placeName.split(',')[0].trim(),
+                    address: geo?.address || null,
+                    lat: lat ?? geo?.lat ?? null,
+                    lng: lng ?? geo?.lng ?? null,
+                    googleMapsUrl: lat ? `https://www.google.com/maps?q=${lat ?? geo?.lat},${lng ?? geo?.lng}` : geo?.googleMapsUrl || null,
+                    appleMapsUrl: geo?.appleMapsUrl || (lat ? `https://maps.apple.com/?q=${encodeURIComponent(placeName)}&ll=${lat},${lng}` : null),
+                    website: geo?.website || null,
+                    description: null,
+                };
+            }
+
+            if (lat && lng) {
+                return {
+                    name: null,
+                    address: `${lat}, ${lng}`,
+                    lat,
+                    lng,
+                    googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+                    appleMapsUrl: `https://maps.apple.com/?ll=${lat},${lng}`,
+                    website: null,
+                    description: null,
+                };
+            }
+            return null;
+        }
+
+        // ── Apple Maps ──────────────────────────────────────────────────────
+        if (host.includes('maps.apple.com')) {
+            const q = parsedUrl.searchParams.get('q');
+            if (q) {
+                const geo = await fetchLocationInfo(q);
+                return {
+                    name: q.split(',')[0].trim(),
+                    address: geo?.address || null,
+                    lat: geo?.lat || null,
+                    lng: geo?.lng || null,
+                    googleMapsUrl: geo?.googleMapsUrl || null,
+                    appleMapsUrl: urlStr,
+                    website: geo?.website || null,
+                    description: null,
+                };
+            }
+            return null;
+        }
+
+        // ── TheFork / TripAdvisor / generic: fetch page metadata ──────────
+        const response = await fetch(urlStr, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; Gastronomos-Bot/1.0)',
+                'Accept': 'text/html',
+                'Accept-Language': 'es-ES,es;q=0.9',
+            },
+            redirect: 'follow',
+            signal: AbortSignal.timeout(8000),
+        });
+
+        const html = await response.text();
+
+        // Extract og:title / title
+        const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1];
+        const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
+        const rawName = ogTitle || titleTag || null;
+
+        if (!rawName) return null;
+
+        // Clean name: remove site suffix
+        const cleanName = rawName
+            .replace(/\s*[-|–|·]\s*(thefork|tripadvisor|yelp|google|apple|opentable|restaurante|restaurantes)[^$]*/gi, '')
+            .split(/[-|–]/)[0]
+            .trim();
+
+        if (cleanName.length < 2) return null;
+
+        // og:description
+        const ogDesc = html.match(/<meta[^>]+(?:property=["']og:description["']|name=["']description["'])[^>]+content=["']([^"']+)["']/i)?.[1];
+
+        // Geocode
+        const geo = await fetchLocationInfo(cleanName);
+
+        return {
+            name: cleanName,
+            address: geo?.address || null,
+            lat: geo?.lat || null,
+            lng: geo?.lng || null,
+            googleMapsUrl: geo?.googleMapsUrl || null,
+            appleMapsUrl: geo?.appleMapsUrl || null,
+            website: host.includes('thefork') || host.includes('tripadvisor')
+                ? null
+                : urlStr,
+            description: ogDesc ? ogDesc.substring(0, 200) : null,
+        };
+
+    } catch (error) {
+        console.error('extractFromUrl error:', error);
+        return null;
+    }
+}
+
 export async function fetchLocationInfo(query) {
     if (!query) return null;
 

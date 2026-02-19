@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { addRestaurant, fetchLocationInfo } from '../actions/restaurants';
+import { addRestaurant, fetchLocationInfo, extractFromUrl } from '../actions/restaurants';
 import { useRouter } from 'next/navigation';
 
 export default function AddRestaurant() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(false);
+    const [pasteUrl, setPasteUrl] = useState('');
+    const [pasteLoading, setPasteLoading] = useState(false);
+    const [pasteError, setPasteError] = useState('');
     const [error, setError] = useState('');
     const [mapsUrls, setMapsUrls] = useState({ google: '', apple: '' });
     const [formData, setFormData] = useState({
@@ -14,6 +17,41 @@ export default function AddRestaurant() {
         cuisine: '', priceRange: '', lat: '', lng: ''
     });
     const router = useRouter();
+
+    const handlePasteUrl = async () => {
+        if (!pasteUrl.trim()) return;
+        setPasteLoading(true);
+        setPasteError('');
+
+        try {
+            const info = await extractFromUrl(pasteUrl.trim());
+            if (!info) {
+                setPasteError('No se pudo extraer información de esta URL. Rellena el formulario manualmente.');
+                return;
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                name: info.name || prev.name,
+                address: info.address || prev.address,
+                url: info.website || prev.url,
+                description: info.description || prev.description,
+                lat: info.lat ? info.lat.toString() : prev.lat,
+                lng: info.lng ? info.lng.toString() : prev.lng,
+            }));
+
+            setMapsUrls({
+                google: info.googleMapsUrl || '',
+                apple: info.appleMapsUrl || '',
+            });
+
+            setPasteUrl('');
+        } catch (err) {
+            setPasteError('Error al procesar el enlace. Inténtalo de nuevo.');
+        } finally {
+            setPasteLoading(false);
+        }
+    };
 
     const handleAutoLocation = async () => {
         if (!formData.name && !formData.address) {
@@ -77,6 +115,50 @@ export default function AddRestaurant() {
                 <h1 style={{ fontSize: '26px', marginBottom: '28px' }}>Añadir Restaurante</h1>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+                    {/* ── Paste link section ── */}
+                    <div style={{
+                        background: 'rgba(0,113,227,0.05)',
+                        border: '1px solid rgba(0,113,227,0.2)',
+                        borderRadius: '16px',
+                        padding: '16px',
+                    }}>
+                        <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '10px', color: 'var(--accent)' }}>
+                            🔗 Pegar enlace de restaurante
+                        </p>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                            Pega un enlace de Google Maps, Apple Maps, TheFork, TripAdvisor... y rellenaremos el formulario automáticamente.
+                        </p>
+                        <div className="address-row" style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                                className="apple-input"
+                                placeholder="https://maps.google.com/... o https://goo.gl/maps/..."
+                                value={pasteUrl}
+                                onChange={(e) => { setPasteUrl(e.target.value); setPasteError(''); }}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handlePasteUrl(); } }}
+                                style={{ fontSize: '14px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={handlePasteUrl}
+                                className="apple-button"
+                                disabled={pasteLoading || !pasteUrl.trim()}
+                                style={{ whiteSpace: 'nowrap' }}
+                            >
+                                {pasteLoading ? 'Cargando...' : '✦ Rellenar'}
+                            </button>
+                        </div>
+                        {pasteError && (
+                            <p style={{ color: '#ff3b30', fontSize: '12px', marginTop: '8px' }}>{pasteError}</p>
+                        )}
+                    </div>
+
+                    {/* Divider */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>o rellena manualmente</span>
+                        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                    </div>
 
                     {/* Name */}
                     <div>
