@@ -4,13 +4,8 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyMember } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
-import { Resend } from 'resend';
 
-function getResend() {
-    return new Resend(process.env.RESEND_API_KEY);
-}
-
-// Phase 1: Validate data, send verification code
+// Registro directo: verifica teléfono en el grupo y crea la cuenta
 export async function initiateRegistration(name, email, password, phone) {
     // Verify phone is in the WhatsApp group
     const member = await verifyMember(phone);
@@ -26,97 +21,23 @@ export async function initiateRegistration(name, email, password, phone) {
         }
 
         // Check if phone already exists
-        const existingPhone = await prisma.user.findUnique({ where: { phone } });
+        const existingPhone = await prisma.user.findFirst({ where: { phone } });
         if (existingPhone) {
             return { error: 'Este número ya está registrado. Por favor, inicia sesión.' };
         }
 
-        // Hash password before storing
+        // Hash password and create user directly
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Generate 6-digit code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // Delete any previous codes for this email
-        await prisma.verificationCode.deleteMany({ where: { email } });
-
-        // Store verification code (expires in 10 minutes)
-        await prisma.verificationCode.create({
-            data: {
-                email,
-                phone,
-                code,
-                name,
-                password: hashedPassword,
-                expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-            },
-        });
-
-        // Send email with code
-        const { error: emailError } = await getResend().emails.send({
-            from: process.env.FROM_EMAIL || 'Gastrónomos <onboarding@resend.dev>',
-            to: email,
-            subject: 'Tu código de verificación - Gastrónomos',
-            html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 400px; margin: 0 auto; padding: 40px 20px;">
-                    <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Gastrónomos</h1>
-                    <p style="color: #86868b; margin-bottom: 32px;">Código de verificación</p>
-                    <div style="background: #f5f5f7; border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 24px;">
-                        <p style="font-size: 40px; font-weight: 700; letter-spacing: 8px; margin: 0;">${code}</p>
-                    </div>
-                    <p style="color: #86868b; font-size: 14px; text-align: center;">
-                        Este código expira en 10 minutos.<br/>
-                        Si no solicitaste este código, ignora este email.
-                    </p>
-                </div>
-            `,
-        });
-
-        if (emailError) {
-            console.error('Email send error:', emailError);
-            return { error: 'No pudimos enviar el código de verificación. Inténtalo de nuevo.' };
-        }
-
-        return { step: 'verify' };
-    } catch (error) {
-        console.error('Registration initiation error:', error?.message || error);
-        return { error: `Error durante el registro: ${error?.message || 'Inténtalo de nuevo.'}` };
-    }
-}
-
-// Phase 2: Verify code and create user
-export async function confirmRegistration(email, code) {
-    try {
-        // Find the most recent non-expired verification code for this email
-        const verification = await prisma.verificationCode.findFirst({
-            where: {
-                email,
-                expiresAt: { gt: new Date() },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-
-        if (!verification) {
-            return { error: 'El código ha expirado. Solicita uno nuevo.' };
-        }
-
-        if (verification.code !== code) {
-            return { error: 'Código incorrecto. Revisa tu email e inténtalo de nuevo.' };
-        }
-
-        // Create the user
         const user = await prisma.user.create({
             data: {
-                name: verification.name,
-                email: verification.email,
-                password: verification.password,
-                phone: verification.phone,
-                role: verification.phone === '+34650068486' ? 'ADMIN' : 'USER',
+                name,
+                email,
+                password: hashedPassword,
+                phone,
+                role: phone.replace(/\s/g, '') === '+34650068486' ? 'ADMIN' : 'USER',
             },
         });
-
-        // Clean up verification codes for this email
-        await prisma.verificationCode.deleteMany({ where: { email } });
 
         // Set session cookie
         const cookieStore = await cookies();
@@ -129,12 +50,17 @@ export async function confirmRegistration(email, code) {
 
         return { success: true };
     } catch (error) {
-        console.error('Registration confirmation error:', error);
+        console.error('Registration error:', error?.message || error);
         if (error.code === 'P2002') {
             return { error: 'Este email o teléfono ya está registrado.' };
         }
-        return { error: 'Ocurrió un error al confirmar el registro.' };
+        return { error: `Error durante el registro: ${error?.message || 'Inténtalo de nuevo.'}` };
     }
+}
+
+// Kept for backwards compatibility (no longer used)
+export async function confirmRegistration(email, code) {
+    return { error: 'Este método ya no se usa.' };
 }
 
 export async function loginUser(email, password) {

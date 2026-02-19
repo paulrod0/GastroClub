@@ -1,21 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { initiateRegistration, confirmRegistration } from '../actions/auth';
+import { initiateRegistration } from '../actions/auth';
 import { useRouter } from 'next/navigation';
 
 export default function Register() {
-    const [step, setStep] = useState('form'); // 'form' or 'verify'
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
-    const [code, setCode] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleSendCode = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
@@ -31,151 +29,28 @@ export default function Register() {
 
             if (result?.error) {
                 setError(result.error);
-            } else if (result?.step === 'verify') {
-                setStep('verify');
-            } else {
-                setError('Ocurrió un error inesperado. Inténtalo de nuevo.');
-            }
-        } catch (err) {
-            console.error('handleSendCode error:', err);
-            setError('Error de conexión. Inténtalo de nuevo.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyCode = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-
-        try {
-            const result = await confirmRegistration(email, code);
-
-            if (result?.error) {
-                setError(result.error);
             } else if (result?.success) {
                 router.push('/dashboard');
             } else {
                 setError('Ocurrió un error inesperado. Inténtalo de nuevo.');
             }
         } catch (err) {
-            console.error('handleVerifyCode error:', err);
+            console.error('Register error:', err);
             setError('Error de conexión. Inténtalo de nuevo.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleResendCode = async () => {
-        setLoading(true);
-        setError('');
-        setCode('');
-
-        try {
-            const result = await initiateRegistration(name, email, password, phone);
-            if (result?.error) {
-                setError(result.error);
-            }
-        } catch (err) {
-            setError('Error al reenviar el código. Inténtalo de nuevo.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Step 2: Verification code input
-    if (step === 'verify') {
-        return (
-            <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 44px)' }}>
-                <div className="glass form-card" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📧</div>
-                        <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Revisa tu email</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                            Hemos enviado un código de 6 dígitos a
-                        </p>
-                        <p style={{ color: 'var(--accent)', fontSize: '14px', fontWeight: 600 }}>
-                            {email}
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                            <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block', marginLeft: '4px' }}>CÓDIGO DE VERIFICACIÓN</label>
-                            <input
-                                type="text"
-                                className="apple-input"
-                                placeholder="000000"
-                                value={code}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                                    setCode(val);
-                                }}
-                                required
-                                maxLength={6}
-                                style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px', fontWeight: 600 }}
-                                autoFocus
-                            />
-                        </div>
-
-                        {error && <p style={{ color: '#ff3b30', fontSize: '12px', textAlign: 'center' }}>{error}</p>}
-
-                        <button
-                            type="submit"
-                            className="apple-button"
-                            style={{ marginTop: '8px', padding: '12px' }}
-                            disabled={loading || code.length !== 6}
-                        >
-                            {loading ? 'Verificando...' : 'Confirmar registro'}
-                        </button>
-                    </form>
-
-                    <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                        <button
-                            onClick={handleResendCode}
-                            disabled={loading}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--accent)',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                            }}
-                        >
-                            Reenviar código
-                        </button>
-                    </div>
-
-                    <div style={{ marginTop: '16px', textAlign: 'center' }}>
-                        <button
-                            onClick={() => { setStep('form'); setCode(''); setError(''); }}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--text-secondary)',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                            }}
-                        >
-                            ← Volver al formulario
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Step 1: Registration form
     return (
         <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 44px)' }}>
             <div className="glass form-card" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
                 <h1 style={{ fontSize: '28px', marginBottom: '8px', textAlign: 'center' }}>Únete al grupo</h1>
                 <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '32px', fontSize: '14px' }}>
-                    Verificaremos tu número y email para acceder.
+                    Verificaremos que eres miembro del grupo de WhatsApp.
                 </p>
 
-                <form onSubmit={handleSendCode} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div>
                         <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block', marginLeft: '4px' }}>NOMBRE</label>
                         <input
@@ -215,7 +90,7 @@ export default function Register() {
                         <input
                             type="tel"
                             className="apple-input"
-                            placeholder="+34..."
+                            placeholder="+34 600 000 000"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
                             required
@@ -228,7 +103,7 @@ export default function Register() {
                     {error && <p style={{ color: '#ff3b30', fontSize: '12px', textAlign: 'center' }}>{error}</p>}
 
                     <button type="submit" className="apple-button" style={{ marginTop: '16px', padding: '12px' }} disabled={loading}>
-                        {loading ? 'Enviando código...' : 'Enviar código de verificación'}
+                        {loading ? 'Creando cuenta...' : 'Crear cuenta'}
                     </button>
                 </form>
 
