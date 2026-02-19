@@ -88,7 +88,7 @@ export default function Register() {
     if (step === 'verify') {
         return (
             <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 44px)' }}>
-                <div className="glass" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
+                <div className="glass form-card" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
                     <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                         <div style={{ fontSize: '48px', marginBottom: '16px' }}>📧</div>
                         <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Revisa tu email</h1>
@@ -169,7 +169,7 @@ export default function Register() {
     // Step 1: Registration form
     return (
         <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 44px)' }}>
-            <div className="glass" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
+            <div className="glass form-card" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
                 <h1 style={{ fontSize: '28px', marginBottom: '8px', textAlign: 'center' }}>Únete al grupo</h1>
                 <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '32px', fontSize: '14px' }}>
                     Verificaremos tu número y email para acceder.

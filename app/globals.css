@@ -29,6 +29,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -36,12 +40,10 @@ body {
   line-height: 1.47059;
   font-weight: 400;
   letter-spacing: -0.022em;
+  -webkit-overflow-scrolling: touch;
 }
 
-h1,
-h2,
-h3,
-h4 {
+h1, h2, h3, h4 {
   font-weight: 600;
   letter-spacing: -0.003em;
 }
@@ -54,21 +56,16 @@ h4 {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
 }
 
-.glass:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+@media (hover: hover) {
+  .glass:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+  }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .animate-in {
@@ -89,11 +86,17 @@ h4 {
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  min-height: 36px;
+  touch-action: manipulation;
+  white-space: nowrap;
+  font-family: var(--sf-font);
 }
 
-.apple-button:hover {
-  background: var(--accent-secondary);
-  transform: scale(1.02);
+@media (hover: hover) {
+  .apple-button:hover {
+    background: var(--accent-secondary);
+    transform: scale(1.02);
+  }
 }
 
 .apple-button:active {
@@ -105,11 +108,13 @@ h4 {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 16px;
-  font-size: 17px;
+  font-size: 16px;
   width: 100%;
   color: var(--foreground);
   outline: none;
   transition: border-color 0.2s;
+  touch-action: manipulation;
+  font-family: var(--sf-font);
 }
 
 .apple-input:focus {
@@ -127,8 +132,141 @@ h4 {
   padding: 80px 0;
 }
 
+/* ── Restaurant grid ── */
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+/* ── Tablet / Mobile (≤ 768px) ── */
 @media (max-width: 768px) {
   .section-padding {
-    padding: 40px 0;
+    padding: 32px 0;
+  }
+
+  .container {
+    padding: 0 16px;
+  }
+
+  .restaurant-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* Navbar */
+  .nav-links {
+    gap: 14px !important;
+  }
+  .nav-links a,
+  .nav-links button {
+    font-size: 13px !important;
+  }
+
+  /* Home hero */
+  .hero-title {
+    font-size: 34px !important;
+    line-height: 1.1 !important;
+  }
+  .hero-subtitle {
+    font-size: 17px !important;
+  }
+  .hero-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    max-width: 320px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .hero-buttons a,
+  .hero-buttons button {
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Feature section */
+  .feature-card {
+    padding: 32px 20px !important;
+    border-radius: 20px !important;
+    margin-top: 24px !important;
+  }
+  .feature-title {
+    font-size: 26px !important;
+  }
+  .feature-subtitle {
+    font-size: 15px !important;
+  }
+
+  /* Dashboard */
+  .dashboard-header h1 {
+    font-size: 22px !important;
+  }
+
+  /* Forms */
+  .form-card {
+    padding: 24px 16px !important;
+    border-radius: 20px !important;
+  }
+
+  /* Address row stacks on mobile */
+  .address-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .address-row button {
+    width: 100% !important;
+  }
+
+  /* Maps preview */
+  .maps-row {
+    flex-direction: column !important;
+  }
+
+  /* Price buttons */
+  .price-buttons {
+    gap: 6px !important;
+  }
+  .price-buttons button {
+    padding: 10px 4px !important;
+    font-size: 14px !important;
+  }
+
+  /* Admin table */
+  .admin-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+}
+
+/* ── Very small phones (< 390px) ── */
+@media (max-width: 390px) {
+  .hero-title {
+    font-size: 28px !important;
+  }
+  .feature-title {
+    font-size: 22px !important;
+  }
+}
+
+/* ── Mobile bottom tab bar ── */
+.mobile-tabbar {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-tabbar {
+    display: flex !important;
+  }
+
+  /* Add padding so content doesn't hide behind tab bar */
+  main {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Hide desktop nav links on mobile (tab bar takes over) */
+  .nav-links {
+    display: none !important;
   }
 }

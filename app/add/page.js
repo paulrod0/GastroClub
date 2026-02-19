@@ -8,15 +8,10 @@ export default function AddRestaurant() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(false);
     const [error, setError] = useState('');
+    const [mapsUrls, setMapsUrls] = useState({ google: '', apple: '' });
     const [formData, setFormData] = useState({
-        name: '',
-        url: '',
-        address: '',
-        description: '',
-        cuisine: '',
-        priceRange: '',
-        lat: '',
-        lng: ''
+        name: '', url: '', address: '', description: '',
+        cuisine: '', priceRange: '', lat: '', lng: ''
     });
     const router = useRouter();
 
@@ -25,7 +20,6 @@ export default function AddRestaurant() {
             setError('Introduce un nombre o dirección para buscar la ubicación.');
             return;
         }
-
         setFetching(true);
         setError('');
 
@@ -38,19 +32,14 @@ export default function AddRestaurant() {
                 address: info.address,
                 lat: info.lat.toString(),
                 lng: info.lng.toString(),
-                // Only fill url/maps if not already set by user
-                url: prev.url || info.website || prev.url || '',
+                url: prev.url || info.website || '',
             }));
-
-            // Store maps URLs in hidden fields via state
             setMapsUrls({ google: info.googleMapsUrl, apple: info.appleMapsUrl });
         } else {
             setError('No pudimos encontrar la ubicación. Por favor, introdúcela manualmente.');
         }
         setFetching(false);
     };
-
-    const [mapsUrls, setMapsUrls] = useState({ google: '', apple: '' });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -76,14 +65,22 @@ export default function AddRestaurant() {
         }
     };
 
+    const label = (text) => (
+        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block', marginLeft: '2px' }}>
+            {text}
+        </label>
+    );
+
     return (
         <div className="container section-padding">
-            <div className="glass" style={{ padding: '40px', borderRadius: '24px', maxWidth: '600px', margin: '0 auto' }}>
-                <h1 style={{ fontSize: '28px', marginBottom: '32px' }}>Añadir Restaurante</h1>
+            <div className="glass form-card" style={{ padding: '40px', borderRadius: '24px', maxWidth: '600px', margin: '0 auto' }}>
+                <h1 style={{ fontSize: '26px', marginBottom: '28px' }}>Añadir Restaurante</h1>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+                    {/* Name */}
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>NOMBRE DEL RESTAURANTE</label>
+                        {label('NOMBRE DEL RESTAURANTE')}
                         <input
                             className="apple-input"
                             placeholder="Ej. El Celler de Can Roca"
@@ -93,9 +90,10 @@ export default function AddRestaurant() {
                         />
                     </div>
 
+                    {/* Address + autocomplete */}
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>DIRECCIÓN</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        {label('DIRECCIÓN')}
+                        <div className="address-row" style={{ display: 'flex', gap: '8px' }}>
                             <input
                                 className="apple-input"
                                 placeholder="Calle, Ciudad..."
@@ -106,55 +104,46 @@ export default function AddRestaurant() {
                                 type="button"
                                 onClick={handleAutoLocation}
                                 className="apple-button"
-                                style={{ background: 'var(--background)', color: 'var(--accent)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}
+                                style={{ background: 'var(--background)', color: 'var(--accent)', border: '1px solid var(--border)' }}
                                 disabled={fetching}
                             >
                                 {fetching ? 'Buscando...' : '✦ Autocompletar'}
                             </button>
                         </div>
-                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginLeft: '4px' }}>
+                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginLeft: '2px' }}>
                             Rellena automáticamente dirección, links de mapas y web.
                         </p>
                     </div>
 
-                    {/* Maps links - shown after autocomplete */}
+                    {/* Maps preview links */}
                     {(mapsUrls.google || mapsUrls.apple) && (
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div className="maps-row" style={{ display: 'flex', gap: '8px' }}>
                             {mapsUrls.google && (
-                                <a
-                                    href={mapsUrls.google}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                        padding: '10px', borderRadius: '12px', border: '1px solid var(--border)',
-                                        fontSize: '13px', color: 'var(--foreground)', textDecoration: 'none',
-                                        background: 'var(--background)',
-                                    }}
-                                >
+                                <a href={mapsUrls.google} target="_blank" rel="noopener noreferrer" style={{
+                                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                    padding: '10px', borderRadius: '12px', border: '1px solid var(--border)',
+                                    fontSize: '13px', color: 'var(--foreground)', textDecoration: 'none',
+                                    background: 'var(--background)',
+                                }}>
                                     🗺 Google Maps
                                 </a>
                             )}
                             {mapsUrls.apple && (
-                                <a
-                                    href={mapsUrls.apple}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                        padding: '10px', borderRadius: '12px', border: '1px solid var(--border)',
-                                        fontSize: '13px', color: 'var(--foreground)', textDecoration: 'none',
-                                        background: 'var(--background)',
-                                    }}
-                                >
+                                <a href={mapsUrls.apple} target="_blank" rel="noopener noreferrer" style={{
+                                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                    padding: '10px', borderRadius: '12px', border: '1px solid var(--border)',
+                                    fontSize: '13px', color: 'var(--foreground)', textDecoration: 'none',
+                                    background: 'var(--background)',
+                                }}>
                                     🍎 Apple Maps
                                 </a>
                             )}
                         </div>
                     )}
 
+                    {/* Web */}
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>WEB (OPCIONAL)</label>
+                        {label('WEB (OPCIONAL)')}
                         <input
                             className="apple-input"
                             placeholder="https://..."
@@ -163,8 +152,9 @@ export default function AddRestaurant() {
                         />
                     </div>
 
+                    {/* Cuisine */}
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>TIPO DE COCINA</label>
+                        {label('TIPO DE COCINA')}
                         <select
                             className="apple-input"
                             value={formData.cuisine}
@@ -172,80 +162,68 @@ export default function AddRestaurant() {
                             required
                         >
                             <option value="">Selecciona una categoría</option>
-                            <option value="Española">Española</option>
-                            <option value="Italiana">Italiana</option>
-                            <option value="Japonesa">Japonesa</option>
-                            <option value="Mexicana">Mexicana</option>
-                            <option value="Francesa">Francesa</option>
-                            <option value="China">China</option>
-                            <option value="India">India</option>
-                            <option value="Tailandesa">Tailandesa</option>
-                            <option value="Mediterránea">Mediterránea</option>
-                            <option value="Americana">Americana</option>
-                            <option value="Peruana">Peruana</option>
-                            <option value="Árabe">Árabe</option>
-                            <option value="Griega">Griega</option>
-                            <option value="Coreana">Coreana</option>
-                            <option value="Vietnamita">Vietnamita</option>
-                            <option value="Fusión">Fusión</option>
-                            <option value="Marisquería">Marisquería</option>
-                            <option value="Asador">Asador</option>
-                            <option value="Vegetariana">Vegetariana</option>
-                            <option value="Tapas">Tapas</option>
-                            <option value="Otra">Otra</option>
+                            {['Española','Italiana','Japonesa','Mexicana','Francesa','China','India',
+                              'Tailandesa','Mediterránea','Americana','Peruana','Árabe','Griega',
+                              'Coreana','Vietnamita','Fusión','Marisquería','Asador','Vegetariana',
+                              'Tapas','Otra'].map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
                         </select>
                     </div>
 
+                    {/* Price range */}
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>RANGO DE PRECIO</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        {label('RANGO DE PRECIO')}
+                        <div className="price-buttons" style={{ display: 'flex', gap: '8px' }}>
                             {[1, 2, 3, 4].map((level) => (
                                 <button
                                     key={level}
                                     type="button"
                                     onClick={() => setFormData({ ...formData, priceRange: level.toString() })}
                                     style={{
-                                        flex: 1,
-                                        padding: '12px 8px',
-                                        borderRadius: '12px',
+                                        flex: 1, padding: '12px 8px', borderRadius: '12px',
                                         border: `1px solid ${formData.priceRange === level.toString() ? 'var(--accent)' : 'var(--border)'}`,
                                         background: formData.priceRange === level.toString() ? 'var(--accent)' : 'var(--background)',
                                         color: formData.priceRange === level.toString() ? 'white' : 'var(--foreground)',
-                                        cursor: 'pointer',
-                                        fontSize: '16px',
-                                        fontWeight: 500,
+                                        cursor: 'pointer', fontSize: '16px', fontWeight: 500,
                                         transition: 'all 0.2s ease',
+                                        fontFamily: 'var(--sf-font)',
                                     }}
                                 >
                                     {'€'.repeat(level)}
                                 </button>
                             ))}
                         </div>
-                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginLeft: '4px' }}>
+                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginLeft: '2px' }}>
                             € Económico · €€ Moderado · €€€ Alto · €€€€ Premium
                         </p>
                     </div>
 
+                    {/* Description */}
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>
-                            POR QUÉ LO RECOMIENDAS <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(opcional)</span>
-                        </label>
+                        {label('POR QUÉ LO RECOMIENDAS')}
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '4px' }}>(opcional)</span>
                         <textarea
                             className="apple-input"
-                            style={{ minHeight: '100px', resize: 'vertical' }}
+                            style={{ minHeight: '90px', resize: 'vertical', marginTop: '6px' }}
                             placeholder="Cuéntanos sobre la comida, el ambiente..."
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         />
                     </div>
 
-                    {error && <p style={{ color: '#ff3b30', fontSize: '12px', textAlign: 'center' }}>{error}</p>}
+                    {error && (
+                        <p style={{ color: '#ff3b30', fontSize: '13px', textAlign: 'center', padding: '8px', borderRadius: '8px', background: 'rgba(255,59,48,0.08)' }}>
+                            {error}
+                        </p>
+                    )}
 
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                         <button type="submit" className="apple-button" style={{ flex: 1, padding: '14px' }} disabled={loading}>
                             {loading ? 'Guardando...' : 'Añadir al grupo'}
                         </button>
-                        <button type="button" onClick={() => router.back()} className="apple-button" style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                        <button type="button" onClick={() => router.back()} className="apple-button"
+                            style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '14px 20px' }}>
                             Cancelar
                         </button>
                     </div>

@@ -7,6 +7,13 @@ export const metadata = {
   description: 'Grupo exclusivo de amantes de la buena mesa',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+};
+
 export default async function RootLayout({ children }) {
   const user = await getCurrentUser();
 

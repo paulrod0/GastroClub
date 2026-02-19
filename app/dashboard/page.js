@@ -12,9 +12,9 @@ export default async function Dashboard() {
 
     return (
         <div className="container section-padding">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <h1 style={{ fontSize: '32px' }}>Nuestros Descubrimientos</h1>
-                <Link href="/add" className="apple-button">
+                <Link href="/add" className="apple-button" style={{ flexShrink: 0 }}>
                     + Añadir
                 </Link>
             </div>

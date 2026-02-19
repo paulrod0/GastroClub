@@ -28,7 +28,7 @@ export default function Login() {
 
     return (
         <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 44px)' }}>
-            <div className="glass" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
+            <div className="glass form-card" style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px' }}>
                 <h1 style={{ fontSize: '28px', marginBottom: '8px', textAlign: 'center' }}>Bienvenido</h1>
                 <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '32px', fontSize: '14px' }}>
                     Introduce tu email y contraseña para entrar.
