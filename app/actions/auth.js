@@ -79,8 +79,8 @@ export async function initiateRegistration(name, email, password, phone) {
 
         return { step: 'verify' };
     } catch (error) {
-        console.error('Registration initiation error:', error);
-        return { error: 'Ocurrió un error durante el registro.' };
+        console.error('Registration initiation error:', error?.message || error);
+        return { error: `Error durante el registro: ${error?.message || 'Inténtalo de nuevo.'}` };
     }
 }
 

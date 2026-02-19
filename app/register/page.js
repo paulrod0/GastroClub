@@ -26,13 +26,20 @@ export default function Register() {
             return;
         }
 
-        const result = await initiateRegistration(name, email, password, phone);
+        try {
+            const result = await initiateRegistration(name, email, password, phone);
 
-        if (result.error) {
-            setError(result.error);
-            setLoading(false);
-        } else if (result.step === 'verify') {
-            setStep('verify');
+            if (result?.error) {
+                setError(result.error);
+            } else if (result?.step === 'verify') {
+                setStep('verify');
+            } else {
+                setError('Ocurrió un error inesperado. Inténtalo de nuevo.');
+            }
+        } catch (err) {
+            console.error('handleSendCode error:', err);
+            setError('Error de conexión. Inténtalo de nuevo.');
+        } finally {
             setLoading(false);
         }
     };
@@ -42,13 +49,21 @@ export default function Register() {
         setLoading(true);
         setError('');
 
-        const result = await confirmRegistration(email, code);
+        try {
+            const result = await confirmRegistration(email, code);
 
-        if (result.error) {
-            setError(result.error);
+            if (result?.error) {
+                setError(result.error);
+            } else if (result?.success) {
+                router.push('/dashboard');
+            } else {
+                setError('Ocurrió un error inesperado. Inténtalo de nuevo.');
+            }
+        } catch (err) {
+            console.error('handleVerifyCode error:', err);
+            setError('Error de conexión. Inténtalo de nuevo.');
+        } finally {
             setLoading(false);
-        } else if (result.success) {
-            router.push('/dashboard');
         }
     };
 
@@ -57,14 +72,16 @@ export default function Register() {
         setError('');
         setCode('');
 
-        const result = await initiateRegistration(name, email, password, phone);
-
-        if (result.error) {
-            setError(result.error);
-        } else {
-            setError('');
+        try {
+            const result = await initiateRegistration(name, email, password, phone);
+            if (result?.error) {
+                setError(result.error);
+            }
+        } catch (err) {
+            setError('Error al reenviar el código. Inténtalo de nuevo.');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     // Step 2: Verification code input
