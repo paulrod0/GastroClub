@@ -1,66 +1,43 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from 'next/link';
+import { getCurrentUser } from './actions/auth';
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="container">
+      <section className="section-padding" style={{ textAlign: 'center' }}>
+        <h1 style={{ fontSize: '56px', marginBottom: '20px' }}>Para los amantes del buen comer.</h1>
+        <p style={{ fontSize: '24px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto 40px' }}>
+          El rincón exclusivo para nuestro grupo de WhatsApp. Comparte y descubre los mejores restaurantes.
+        </p>
+
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+          {user ? (
+            <Link href="/dashboard" className="apple-button" style={{ padding: '16px 32px', fontSize: '17px' }}>
+              Ver Restaurantes
+            </Link>
+          ) : (
+            <>
+              <Link href="/register" className="apple-button" style={{ padding: '16px 32px', fontSize: '17px' }}>
+                Unirse ahora
+              </Link>
+              <Link href="/login" style={{ color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', fontSize: '17px' }}>
+                Ya soy miembro <span style={{ marginLeft: '4px' }}>›</span>
+              </Link>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section style={{ marginTop: '40px' }}>
+        <div className="glass" style={{ borderRadius: '24px', padding: '60px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '40px', marginBottom: '16px' }}>Exclusivo. Elegante. Sabroso.</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '19px' }}>
+            Solo para miembros verificados de nuestro grupo de WhatsApp.
           </p>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
     </div>
   );
 }
