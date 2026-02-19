@@ -29,7 +29,6 @@ export default function AddRestaurant() {
         setFetching(true);
         setError('');
 
-        // Search by address if provided, otherwise by name
         const query = formData.address || formData.name;
         const info = await fetchLocationInfo(query);
 
@@ -38,13 +37,20 @@ export default function AddRestaurant() {
                 ...prev,
                 address: info.address,
                 lat: info.lat.toString(),
-                lng: info.lng.toString()
+                lng: info.lng.toString(),
+                // Only fill url/maps if not already set by user
+                url: prev.url || info.website || prev.url || '',
             }));
+
+            // Store maps URLs in hidden fields via state
+            setMapsUrls({ google: info.googleMapsUrl, apple: info.appleMapsUrl });
         } else {
-            setError('No pudimos encontrar la ubicación automáticamente. Por favor, introdúcela manualmente.');
+            setError('No pudimos encontrar la ubicación. Por favor, introdúcela manualmente.');
         }
         setFetching(false);
     };
+
+    const [mapsUrls, setMapsUrls] = useState({ google: '', apple: '' });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -53,14 +59,20 @@ export default function AddRestaurant() {
 
         const fd = new FormData();
         Object.entries(formData).forEach(([key, value]) => fd.append(key, value));
+        fd.append('googleMapsUrl', mapsUrls.google);
+        fd.append('appleMapsUrl', mapsUrls.apple);
 
-        const result = await addRestaurant(fd);
-
-        if (result.error) {
-            setError(result.error);
+        try {
+            const result = await addRestaurant(fd);
+            if (result?.error) {
+                setError(result.error);
+            } else {
+                router.push('/dashboard');
+            }
+        } catch (err) {
+            setError('Error al guardar el restaurante. Inténtalo de nuevo.');
+        } finally {
             setLoading(false);
-        } else {
-            router.push('/dashboard');
         }
     };
 
@@ -82,11 +94,11 @@ export default function AddRestaurant() {
                     </div>
 
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>DIRECCIÓN O URL</label>
+                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>DIRECCIÓN</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <input
                                 className="apple-input"
-                                placeholder="Calle, Ciudad o URL de GMaps"
+                                placeholder="Calle, Ciudad..."
                                 value={formData.address}
                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                             />
@@ -97,13 +109,49 @@ export default function AddRestaurant() {
                                 style={{ background: 'var(--background)', color: 'var(--accent)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}
                                 disabled={fetching}
                             >
-                                {fetching ? 'Buscando...' : 'Autocompletar'}
+                                {fetching ? 'Buscando...' : '✦ Autocompletar'}
                             </button>
                         </div>
                         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginLeft: '4px' }}>
-                            Magic: Obtén la ubicación automáticamente usando el nombre o dirección.
+                            Rellena automáticamente dirección, links de mapas y web.
                         </p>
                     </div>
+
+                    {/* Maps links - shown after autocomplete */}
+                    {(mapsUrls.google || mapsUrls.apple) && (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {mapsUrls.google && (
+                                <a
+                                    href={mapsUrls.google}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                        padding: '10px', borderRadius: '12px', border: '1px solid var(--border)',
+                                        fontSize: '13px', color: 'var(--foreground)', textDecoration: 'none',
+                                        background: 'var(--background)',
+                                    }}
+                                >
+                                    🗺 Google Maps
+                                </a>
+                            )}
+                            {mapsUrls.apple && (
+                                <a
+                                    href={mapsUrls.apple}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                        padding: '10px', borderRadius: '12px', border: '1px solid var(--border)',
+                                        fontSize: '13px', color: 'var(--foreground)', textDecoration: 'none',
+                                        background: 'var(--background)',
+                                    }}
+                                >
+                                    🍎 Apple Maps
+                                </a>
+                            )}
+                        </div>
+                    )}
 
                     <div>
                         <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>WEB (OPCIONAL)</label>
@@ -179,14 +227,15 @@ export default function AddRestaurant() {
                     </div>
 
                     <div>
-                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>POR QUÉ LO RECOMIENDAS</label>
+                        <label style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>
+                            POR QUÉ LO RECOMIENDAS <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(opcional)</span>
+                        </label>
                         <textarea
                             className="apple-input"
                             style={{ minHeight: '100px', resize: 'vertical' }}
                             placeholder="Cuéntanos sobre la comida, el ambiente..."
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            required
                         />
                     </div>
 

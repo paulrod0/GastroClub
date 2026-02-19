@@ -20,18 +20,20 @@ model User {
 }
 
 model Restaurant {
-  id          Int      @id @default(autoincrement())
-  name        String
-  address     String?
-  url         String?
-  description String?
-  cuisine     String?
-  priceRange  Int?     @map("price_range")
-  latitude    Float?
-  longitude   Float?
-  addedBy     User     @relation(fields: [userId], references: [id])
-  userId      Int
-  createdAt   DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  name          String
+  address       String?
+  url           String?
+  googleMapsUrl String?  @map("google_maps_url")
+  appleMapsUrl  String?  @map("apple_maps_url")
+  description   String?
+  cuisine       String?
+  priceRange    Int?     @map("price_range")
+  latitude      Float?
+  longitude     Float?
+  addedBy       User     @relation(fields: [userId], references: [id])
+  userId        Int
+  createdAt     DateTime @default(now())
 
   @@unique([name, address])
 }
