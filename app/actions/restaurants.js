@@ -4,6 +4,124 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from './auth';
 import { revalidatePath } from 'next/cache';
 
+// Map Google Places types to our cuisine labels
+const GOOGLE_CUISINE_MAP = {
+    'japanese_restaurant': 'Japonesa',
+    'italian_restaurant': 'Italiana',
+    'mexican_restaurant': 'Mexicana',
+    'chinese_restaurant': 'China',
+    'french_restaurant': 'Francesa',
+    'indian_restaurant': 'India',
+    'thai_restaurant': 'Tailandesa',
+    'spanish_restaurant': 'Española',
+    'mediterranean_restaurant': 'Mediterránea',
+    'greek_restaurant': 'Griega',
+    'american_restaurant': 'Americana',
+    'korean_restaurant': 'Coreana',
+    'vietnamese_restaurant': 'Vietnamita',
+    'seafood_restaurant': 'Marisquería',
+    'vegetarian_restaurant': 'Vegetariana',
+    'steak_house': 'Asador',
+    'tapas_bar': 'Tapas',
+    'sushi_restaurant': 'Japonesa',
+    'pizza_restaurant': 'Italiana',
+    'burger_restaurant': 'Americana',
+    'bar': 'Tapas',
+};
+
+/**
+ * Busca restaurantes por nombre y ciudad usando Google Places API (Text Search).
+ * Devuelve un array de candidatos con toda la info disponible.
+ */
+export async function searchRestaurantByName(name, city) {
+    if (!name || name.trim().length < 2) return [];
+
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (!apiKey) {
+        console.error('GOOGLE_PLACES_API_KEY not set');
+        return [];
+    }
+
+    const query = city ? `${name.trim()} restaurante ${city.trim()}` : `${name.trim()} restaurante`;
+
+    try {
+        // Use Places API v1 Text Search
+        const res = await fetch(
+            `https://places.googleapis.com/v1/places:searchText`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Goog-Api-Key': apiKey,
+                    'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.websiteUri,places.nationalPhoneNumber,places.types,places.rating,places.userRatingCount,places.regularOpeningHours,places.priceLevel,places.googleMapsUri',
+                },
+                body: JSON.stringify({
+                    textQuery: query,
+                    maxResultCount: 5,
+                    languageCode: 'es',
+                }),
+                next: { revalidate: 0 },
+            }
+        );
+
+        const data = await res.json();
+        if (!data.places || data.places.length === 0) return [];
+
+        // Price level mapping: FREE=0, INEXPENSIVE=1, MODERATE=2, EXPENSIVE=3, VERY_EXPENSIVE=4
+        const priceLevelMap = {
+            'PRICE_LEVEL_FREE': 1,
+            'PRICE_LEVEL_INEXPENSIVE': 1,
+            'PRICE_LEVEL_MODERATE': 2,
+            'PRICE_LEVEL_EXPENSIVE': 3,
+            'PRICE_LEVEL_VERY_EXPENSIVE': 4,
+        };
+
+        return data.places.map((place) => {
+            const lat = place.location?.latitude ?? null;
+            const lng = place.location?.longitude ?? null;
+            const placeName = place.displayName?.text || name;
+            const address = place.formattedAddress || null;
+            const shortAddress = address?.split(',').slice(0, 3).join(',') || address;
+
+            // Detect cuisine from place types
+            const types = place.types || [];
+            let cuisineLabel = null;
+            for (const t of types) {
+                if (GOOGLE_CUISINE_MAP[t]) { cuisineLabel = GOOGLE_CUISINE_MAP[t]; break; }
+            }
+
+            const priceLevel = priceLevelMap[place.priceLevel] || null;
+
+            // Build Google Maps URL using the place's own URI or coords
+            const googleMapsUrl = place.googleMapsUri ||
+                (lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null);
+            const appleMapsUrl = lat && lng
+                ? `https://maps.apple.com/?q=${encodeURIComponent(placeName)}&ll=${lat},${lng}`
+                : null;
+
+            return {
+                name: placeName,
+                address,
+                shortAddress,
+                lat,
+                lng,
+                googleMapsUrl,
+                appleMapsUrl,
+                website: place.websiteUri || null,
+                phone: place.nationalPhoneNumber || null,
+                cuisineLabel,
+                priceLevel,
+                rating: place.rating || null,
+                ratingCount: place.userRatingCount || null,
+            };
+        });
+
+    } catch (error) {
+        console.error('searchRestaurantByName error:', error);
+        return [];
+    }
+}
+
 export async function getRestaurants() {
     return await prisma.restaurant.findMany({
         include: { addedBy: true },
