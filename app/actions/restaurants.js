@@ -3,31 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from './auth';
 import { revalidatePath } from 'next/cache';
-
-// Map Google Places types to our cuisine labels
-const GOOGLE_CUISINE_MAP = {
-    'japanese_restaurant': 'Japonesa',
-    'italian_restaurant': 'Italiana',
-    'mexican_restaurant': 'Mexicana',
-    'chinese_restaurant': 'China',
-    'french_restaurant': 'Francesa',
-    'indian_restaurant': 'India',
-    'thai_restaurant': 'Tailandesa',
-    'spanish_restaurant': 'Española',
-    'mediterranean_restaurant': 'Mediterránea',
-    'greek_restaurant': 'Griega',
-    'american_restaurant': 'Americana',
-    'korean_restaurant': 'Coreana',
-    'vietnamese_restaurant': 'Vietnamita',
-    'seafood_restaurant': 'Marisquería',
-    'vegetarian_restaurant': 'Vegetariana',
-    'steak_house': 'Asador',
-    'tapas_bar': 'Tapas',
-    'sushi_restaurant': 'Japonesa',
-    'pizza_restaurant': 'Italiana',
-    'burger_restaurant': 'Americana',
-    'bar': 'Tapas',
-};
+import { GOOGLE_CUISINE_MAP } from '@/lib/cuisineMap';
+import { fetchPlacePhotoUrl } from '@/lib/placesPhoto';
 
 /**
  * Busca restaurantes por nombre y ciudad usando Google Places API (Text Search).
@@ -53,7 +30,7 @@ export async function searchRestaurantByName(name, city) {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': apiKey,
-                    'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.websiteUri,places.nationalPhoneNumber,places.types,places.rating,places.userRatingCount,places.regularOpeningHours,places.priceLevel,places.googleMapsUri',
+                    'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.websiteUri,places.nationalPhoneNumber,places.types,places.rating,places.userRatingCount,places.regularOpeningHours,places.priceLevel,places.googleMapsUri,places.photos',
                 },
                 body: JSON.stringify({
                     textQuery: query,
@@ -76,45 +53,55 @@ export async function searchRestaurantByName(name, city) {
             'PRICE_LEVEL_VERY_EXPENSIVE': 4,
         };
 
-        return data.places.map((place) => {
-            const lat = place.location?.latitude ?? null;
-            const lng = place.location?.longitude ?? null;
-            const placeName = place.displayName?.text || name;
-            const address = place.formattedAddress || null;
-            const shortAddress = address?.split(',').slice(0, 3).join(',') || address;
+        return await Promise.all(
+            data.places.map(async (place) => {
+                const lat = place.location?.latitude ?? null;
+                const lng = place.location?.longitude ?? null;
+                const placeName = place.displayName?.text || name;
+                const address = place.formattedAddress || null;
+                const shortAddress = address?.split(',').slice(0, 3).join(',') || address;
 
-            // Detect cuisine from place types
-            const types = place.types || [];
-            let cuisineLabel = null;
-            for (const t of types) {
-                if (GOOGLE_CUISINE_MAP[t]) { cuisineLabel = GOOGLE_CUISINE_MAP[t]; break; }
-            }
+                // Detect cuisine from place types
+                const types = place.types || [];
+                let cuisineLabel = null;
+                for (const t of types) {
+                    if (GOOGLE_CUISINE_MAP[t]) { cuisineLabel = GOOGLE_CUISINE_MAP[t]; break; }
+                }
 
-            const priceLevel = priceLevelMap[place.priceLevel] || null;
+                const priceLevel = priceLevelMap[place.priceLevel] || null;
 
-            // Build Google Maps URL using the place's own URI or coords
-            const googleMapsUrl = place.googleMapsUri ||
-                (lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null);
-            const appleMapsUrl = lat && lng
-                ? `https://maps.apple.com/?q=${encodeURIComponent(placeName)}&ll=${lat},${lng}`
-                : null;
+                // Build Google Maps URL using the place's own URI or coords
+                const googleMapsUrl = place.googleMapsUri ||
+                    (lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null);
+                const appleMapsUrl = lat && lng
+                    ? `https://maps.apple.com/?q=${encodeURIComponent(placeName)}&ll=${lat},${lng}`
+                    : null;
 
-            return {
-                name: placeName,
-                address,
-                shortAddress,
-                lat,
-                lng,
-                googleMapsUrl,
-                appleMapsUrl,
-                website: place.websiteUri || null,
-                phone: place.nationalPhoneNumber || null,
-                cuisineLabel,
-                priceLevel,
-                rating: place.rating || null,
-                ratingCount: place.userRatingCount || null,
-            };
-        });
+                // Fetch first photo — fails silently → null
+                let photoUrl = null;
+                const firstPhoto = place.photos?.[0];
+                if (firstPhoto?.name) {
+                    photoUrl = await fetchPlacePhotoUrl(firstPhoto.name, apiKey);
+                }
+
+                return {
+                    name: placeName,
+                    address,
+                    shortAddress,
+                    lat,
+                    lng,
+                    googleMapsUrl,
+                    appleMapsUrl,
+                    website: place.websiteUri || null,
+                    phone: place.nationalPhoneNumber || null,
+                    cuisineLabel,
+                    priceLevel,
+                    rating: place.rating || null,
+                    ratingCount: place.userRatingCount || null,
+                    photoUrl,
+                };
+            })
+        );
 
     } catch (error) {
         console.error('searchRestaurantByName error:', error);
@@ -143,6 +130,7 @@ export async function addRestaurant(formData) {
     const lng = parseFloat(formData.get('lng')) || null;
     const googleMapsUrl = formData.get('googleMapsUrl') || null;
     const appleMapsUrl = formData.get('appleMapsUrl') || null;
+    const photoUrl = formData.get('photoUrl') || null;
 
     try {
         // Check for duplicates (same name and address)
@@ -165,6 +153,7 @@ export async function addRestaurant(formData) {
                 longitude: lng,
                 googleMapsUrl,
                 appleMapsUrl,
+                photoUrl,
                 userId: user.id,
             },
         });

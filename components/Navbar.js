@@ -62,6 +62,7 @@ export default function Navbar({ user }) {
                                     <Link href="/admin" style={linkStyle('/admin')}>Admin</Link>
                                 )}
                                 <Link href="/dashboard" style={linkStyle('/dashboard')}>Restaurantes</Link>
+                                <Link href="/buscar" style={linkStyle('/buscar')}>Buscar</Link>
                                 <Link href="/add" style={linkStyle('/add')}>Añadir</Link>
                                 <button onClick={handleLogout} style={{
                                     background: 'none', border: 'none',
@@ -106,6 +107,15 @@ export default function Navbar({ user }) {
                     }}>
                         <span style={{ fontSize: '22px' }}>🍽</span>
                         Restaurantes
+                    </Link>
+                    <Link href="/buscar" style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                        textDecoration: 'none', color: isActive('/buscar') ? 'var(--accent)' : 'var(--text-secondary)',
+                        fontSize: '10px', fontWeight: isActive('/buscar') ? 600 : 400,
+                        minWidth: '60px',
+                    }}>
+                        <span style={{ fontSize: '22px' }}>🔍</span>
+                        Buscar
                     </Link>
                     <Link href="/add" style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',

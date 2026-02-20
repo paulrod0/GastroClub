@@ -49,9 +49,17 @@ function RestaurantCard({ res }) {
     return (
         <article className="glass" style={{ borderRadius: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-            {/* Coloured header */}
+            {/* Coloured header — photo if available, else cuisine gradient */}
             <div style={{
-                background: `linear-gradient(135deg, ${cover.bg}f0, ${cover.bg}a0)`,
+                background: res.photoUrl
+                    ? 'rgba(0,0,0,0.4)'
+                    : `linear-gradient(135deg, ${cover.bg}f0, ${cover.bg}a0)`,
+                backgroundImage: res.photoUrl
+                    ? `linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.62) 100%), url(${res.photoUrl})`
+                    : undefined,
+                backgroundSize: res.photoUrl ? 'cover' : undefined,
+                backgroundPosition: res.photoUrl ? 'center' : undefined,
+                minHeight: res.photoUrl ? '130px' : undefined,
                 padding: '18px 18px 14px',
                 position: 'relative', overflow: 'hidden',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px',

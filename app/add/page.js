@@ -33,7 +33,8 @@ export default function AddRestaurant() {
     const [mapsUrls, setMapsUrls] = useState({ google: '', apple: '' });
     const [formData, setFormData] = useState({
         name: '', url: '', address: '', description: '',
-        cuisine: '', priceRange: '', lat: '', lng: ''
+        cuisine: '', priceRange: '', lat: '', lng: '',
+        photoUrl: '',
     });
 
     const router = useRouter();
@@ -69,6 +70,7 @@ export default function AddRestaurant() {
             lng: candidate.lng?.toString() || prev.lng,
             cuisine: candidate.cuisineLabel || prev.cuisine,
             priceRange: candidate.priceLevel?.toString() || prev.priceRange,
+            photoUrl: candidate.photoUrl || prev.photoUrl,
         }));
         setMapsUrls({ google: candidate.googleMapsUrl || '', apple: candidate.appleMapsUrl || '' });
         setCandidates([]);
