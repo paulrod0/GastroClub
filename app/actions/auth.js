@@ -1,9 +1,21 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyMember } from '@/lib/auth';
+import { sendPasswordResetEmail } from '@/lib/email';
+import { requestPasswordReset as requestReset, completePasswordReset as completeReset } from '@/lib/passwordResetFlow';
 import bcrypt from 'bcryptjs';
+
+async function setSessionCookie(userId) {
+    const cookieStore = await cookies();
+    cookieStore.set('session', userId.toString(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+    });
+}
 
 // Registro directo: verifica teléfono en el grupo y crea la cuenta
 export async function initiateRegistration(name, email, password, phone) {
@@ -40,13 +52,7 @@ export async function initiateRegistration(name, email, password, phone) {
         });
 
         // Set session cookie
-        const cookieStore = await cookies();
-        cookieStore.set('session', user.id.toString(), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-        });
+        await setSessionCookie(user.id);
 
         return { success: true };
     } catch (error) {
@@ -78,18 +84,39 @@ export async function loginUser(email, password) {
             return { error: 'Email o contraseña incorrectos.' };
         }
 
-        const cookieStore = await cookies();
-        cookieStore.set('session', user.id.toString(), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-        });
+        await setSessionCookie(user.id);
 
         return { success: true };
     } catch (error) {
         console.error('Login error:', error);
         return { error: 'Ocurrió un error al iniciar sesión.' };
+    }
+}
+
+export async function requestPasswordReset(email) {
+    try {
+        const h = await headers();
+        const baseUrl = `${h.get('x-forwarded-proto') || 'https'}://${h.get('host')}`;
+        return await requestReset(email, { db: prisma, sendEmail: sendPasswordResetEmail, baseUrl });
+    } catch (error) {
+        console.error('Password reset request error:', error);
+        return { error: 'No pudimos enviar el email. Inténtalo de nuevo.' };
+    }
+}
+
+export async function resetPassword(token, newPassword) {
+    try {
+        const result = await completeReset(token, newPassword, {
+            db: prisma,
+            hashPassword: (p) => bcrypt.hash(p, 10),
+        });
+        if (result.success) {
+            await setSessionCookie(result.userId);
+        }
+        return result;
+    } catch (error) {
+        console.error('Password reset error:', error);
+        return { error: 'Ocurrió un error al cambiar la contraseña.' };
     }
 }
 

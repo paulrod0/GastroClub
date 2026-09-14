@@ -63,6 +63,10 @@ export default function Login() {
                     <button type="submit" className="apple-button" style={{ marginTop: '16px', padding: '12px' }} disabled={loading}>
                         {loading ? 'Cargando...' : 'Entrar'}
                     </button>
+
+                    <p style={{ textAlign: 'center', fontSize: '13px', marginTop: '4px' }}>
+                        <a href="/forgot-password" style={{ color: 'var(--accent)' }}>¿Olvidaste tu contraseña?</a>
+                    </p>
                 </form>
 
                 <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>
