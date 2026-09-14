@@ -1,11 +1,19 @@
 'use server';
 
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyMember } from '@/lib/auth';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { requestPasswordReset as requestReset, completePasswordReset as completeReset } from '@/lib/passwordResetFlow';
 import bcrypt from 'bcryptjs';
+
+// Never derive this from request headers: a spoofed Host would make the
+// reset email link point at an attacker's domain (reset poisoning).
+function getAppUrl() {
+    if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, '');
+    if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+    return 'http://localhost:3000';
+}
 
 async function setSessionCookie(userId) {
     const cookieStore = await cookies();
@@ -95,9 +103,7 @@ export async function loginUser(email, password) {
 
 export async function requestPasswordReset(email) {
     try {
-        const h = await headers();
-        const baseUrl = `${h.get('x-forwarded-proto') || 'https'}://${h.get('host')}`;
-        return await requestReset(email, { db: prisma, sendEmail: sendPasswordResetEmail, baseUrl });
+        return await requestReset(email, { db: prisma, sendEmail: sendPasswordResetEmail, baseUrl: getAppUrl() });
     } catch (error) {
         console.error('Password reset request error:', error);
         return { error: 'No pudimos enviar el email. Inténtalo de nuevo.' };
